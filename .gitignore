@@ -1,0 +1,7 @@
+backend/venv/
+backend/audio/
+*.mp3
+*.wav
+__pycache__/
+.DS_Store
+.env
