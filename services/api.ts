@@ -1,8 +1,8 @@
-
-
 import { SimplifiedData, UploadedFile, ChatMessage } from '../types';
 import { LANGUAGES } from '../constants';
 import { GoogleGenAI, Chat } from '@google/genai';
+
+const BACKEND_URL = "https://yoshiko-unforeshortened-kieran.ngrok-free.dev"; // 👈 ngrok backend URL
 
 let genAI: GoogleGenAI | undefined;
 let chatSession: Chat | undefined;
@@ -23,57 +23,91 @@ try {
   console.error("Failed to initialize GoogleGenAI. Make sure the API key is valid.", error);
 }
 
+// ========================================================
+// Existing Gemini logic (unchanged) + backend fallback logic
+// ========================================================
 export const sendChatMessage = async (
   message: string, 
   language: string, 
   file: UploadedFile | null
 ): Promise<SimplifiedData> => {
-  if (!chatSession) {
-    throw new Error("Gemini AI Chat is not initialized. Please configure your API key.");
-  }
-
   const languageName = LANGUAGES.find(l => l.code === language)?.name || 'the selected language';
-  
-  const prompt = `
-    User input: "${message}"
-    ${file ? `(Reference file: ${file.name})` : ''}
-    ---
-    Task: First, address the user's input (simplify text, answer a question, or describe an image). Then, translate your entire response into ${languageName}.
-  `;
 
-  let response;
-  if (file && file.type === 'image') {
-    const imagePart = {
-      inlineData: {
-        mimeType: file.content.match(/data:(.*);base64,/)?.[1] || 'image/jpeg',
-        data: file.content.split(',')[1],
-      },
+  // 1️⃣ Try using local Gemini logic first (if API key is configured)
+  if (chatSession) {
+    const prompt = `
+      User input: "${message}"
+      ${file ? `(Reference file: ${file.name})` : ''}
+      ---
+      Task: First, address the user's input (simplify text, answer a question, or describe an image). Then, translate your entire response into ${languageName}.
+    `;
+
+    let response;
+    if (file && file.type === 'image') {
+      const imagePart = {
+        inlineData: {
+          mimeType: file.content.match(/data:(.*);base64,/)?.[1] || 'image/jpeg',
+          data: file.content.split(',')[1],
+        },
+      };
+      response = await chatSession.sendMessage({ message: [prompt, imagePart] });
+    } else {
+      response = await chatSession.sendMessage({ message: prompt });
+    }
+
+    return {
+      simplifiedText: response.text,
+      audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3', // Placeholder audio
     };
-    // FIX: The `sendMessage` method for chat expects a `message` property, not `parts`. The `message` property can accept an array of strings and Parts for multimodal input.
-    response = await chatSession.sendMessage({ message: [prompt, imagePart] });
-  } else {
-    response = await chatSession.sendMessage({ message: prompt });
   }
 
-  return {
-    simplifiedText: response.text,
-    audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3', // Placeholder audio
-  };
+  // 2️⃣ If Gemini isn’t configured locally, call backend instead
+  try {
+    const response = await fetch(`${BACKEND_URL}/simplify`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: message }),
+    });
+
+    if (!response.ok) throw new Error(`Backend error: ${response.statusText}`);
+
+    const data = await response.json();
+
+    // If audio support is desired
+    const audioRes = await fetch(`${BACKEND_URL}/speak`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text: data.simplified }),
+    });
+
+    const blob = await audioRes.blob();
+    const audioUrl = URL.createObjectURL(blob);
+
+    return {
+      simplifiedText: data.simplified,
+      audioUrl,
+    };
+  } catch (backendError) {
+    console.error("Backend call failed:", backendError);
+    throw new Error("Both Gemini and backend requests failed.");
+  }
 };
 
+// ========================================================
+// Translations logic (untouched but now can fall back to backend if desired)
+// ========================================================
 const translationsCache: Record<string, Record<string, string>> = {};
 
 export const getTranslations = async (
   languageName: string,
   defaultStrings: Record<string, string>
 ): Promise<Record<string, string>> => {
-    if (translationsCache[languageName]) {
-        return translationsCache[languageName];
-    }
-    if (!genAI) {
-        console.warn("Gemini AI not initialized. Skipping UI translation.");
-        return {};
-    }
+  if (translationsCache[languageName]) {
+    return translationsCache[languageName];
+  }
+
+  // 1️⃣ Try Gemini translation
+  if (genAI) {
     const modelName = 'gemini-2.5-flash';
     const prompt = `Translate the JSON values into an informal and casual tone of '${languageName}'. IMPORTANT: Any placeholder text in curly braces (like "{brandName}") must be preserved exactly as is in the translated strings. Do not translate the text inside the curly braces. Return only a valid JSON object with the identical keys.
     Input:
@@ -86,17 +120,33 @@ export const getTranslations = async (
         contents: prompt,
         config: {
           responseMimeType: "application/json",
-        }
+        },
       });
+
       let jsonText = result.text;
-      
       jsonText = jsonText.trim().replace(/^```json\n/, '').replace(/\n```$/, '');
-      
       const translations = JSON.parse(jsonText);
       translationsCache[languageName] = translations;
       return translations;
     } catch (error) {
-      console.error(`Failed to get translations for ${languageName}:`, error);
-      return {}; 
+      console.error(`Failed to get translations via Gemini for ${languageName}:`, error);
     }
+  }
+
+  // 2️⃣ Fallback: call backend for translations (if endpoint available)
+  try {
+    const res = await fetch(`${BACKEND_URL}/translate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ language: languageName, strings: defaultStrings }),
+    });
+
+    if (!res.ok) throw new Error("Backend translation failed");
+    const data = await res.json();
+    translationsCache[languageName] = data;
+    return data;
+  } catch (backendError) {
+    console.warn("Backend translation not available, returning defaults.");
+    return defaultStrings;
+  }
 };
