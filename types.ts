@@ -1,0 +1,17 @@
+export type AppState = 'idle' | 'loading' | 'success' | 'error';
+
+export interface SimplifiedData {
+  simplifiedText: string;
+  audioUrl: string;
+}
+
+export interface Language {
+  code: string;
+  name: string;
+}
+
+export interface UploadedFile {
+  name: string;
+  type: 'text' | 'image';
+  content: string; // File content for text files, base64 data URL for images
+}
