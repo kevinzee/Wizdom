@@ -1,31 +1,54 @@
-from fastapi import FastAPI, Body, Response
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse, StreamingResponse
 from dotenv import load_dotenv
-import os
+import io
 
-# Import your helper modules
-from gemini_client import simplify_text
-from elevenlabs_client import synthesize_speech
+from .gemini_client import simplify_text
+from .elevenlabs_client import synthesize_speech
 
-# Load .env variables (your API keys)
 load_dotenv()
 
-# Initialize FastAPI
-app = FastAPI()
+app = FastAPI(title="SpeakEasy API", version="1.0")
+
+
+@app.post("/simplify")
+async def simplify(request: Request):
+    """
+    Simplify complex text using Gemini.
+    Example payload: { "text": "The mitochondria is the powerhouse of the cell." }
+    """
+    data = await request.json()
+    text = data.get("text", "").strip()
+
+    if not text:
+        return JSONResponse({"error": "No text provided"}, status_code=400)
+
+    simplified = simplify_text(text)
+    return JSONResponse({"simplified": simplified})
+
+
+@app.post("/speak")
+async def speak(request: Request):
+    """
+    Simplify text and generate speech audio (MP3) using ElevenLabs.
+    Example payload: { "text": "Explain academic integrity in simple terms." }
+    """
+    data = await request.json()
+    text = data.get("text", "").strip()
+
+    if not text:
+        return JSONResponse({"error": "No text provided"}, status_code=400)
+
+    # Step 1: Simplify text with Gemini
+    simplified = simplify_text(text)
+
+    # Step 2: Convert to speech with ElevenLabs
+    audio_bytes = synthesize_speech(simplified)
+
+    # Stream the MP3 back to the client
+    return StreamingResponse(io.BytesIO(audio_bytes), media_type="audio/mpeg")
+
 
 @app.get("/")
 def root():
-    return {"message": "SpeakEasy backend is running!"}
-
-
-@app.post("/api/simplify")
-def simplify(input_text: str = Body(..., embed=True)):
-    """
-    Simplifies text using Gemini and generates speech with ElevenLabs.
-    Returns an MP3 audio file of the simplified text.
-    """
-    try:
-        simplified_text = simplify_text(input_text)
-        audio_bytes = synthesize_speech(simplified_text)
-        return Response(content=audio_bytes, media_type="audio/mpeg")
-    except Exception as e:
-        return {"error": str(e)}
+    return {"message": "Welcome to the SpeakEasy API — use /simplify or /speak endpoints."}
