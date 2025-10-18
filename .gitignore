@@ -1,14 +1,54 @@
-backend/venv/
-backend/audio/
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.py.class
+
+# Virtual environment
+.venv/
+venv/
+ENV/
+env/
+env.bak/
+
+# Dotenv and secrets
+.env
+*.env
+
+# Byte-compiled / temporary files
+*.log
+*.pot
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+
+# --- Audio files ---
+audio/
 *.mp3
 *.wav
-__pycache__/
+
+# --- macOS ---
 .DS_Store
-.env
-backend/venv/
-backend/.venv/
-__pycache__/
-.DS_Store
-.env
-*.mp3
-*.wav
+.AppleDouble
+.LSOverride
+
+# --- IDEs / Editors ---
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# --- Node / Frontend (if any) ---
+node_modules/
+npm-debug.log
+yarn-error.log
+dist/
+build/
+
+# --- OS / Misc ---
+Thumbs.db
+ehthumbs.db
+Desktop.ini
