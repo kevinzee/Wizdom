@@ -1,10 +1,17 @@
 # backend/gemini_client.py
-from google import genai
+import google.generativeai as genai
 from dotenv import load_dotenv
 import os
 
+# Load environment variables
 load_dotenv()
-client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+
+# Configure the API key (this replaces Client initialization)
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+
+# Create a model instance once
+model = genai.GenerativeModel("gemini-2.5-flash")  # or "gemini-2.5-flash" if available
+
 
 def simplify_text(text: str, target_grade: int = 6) -> str:
     prompt = f"""
@@ -27,11 +34,13 @@ Text to simplify:
 {text}
     """
 
-    response = client.models.generate_content(
-        model="gemini-2.5-flash",
-        contents=prompt
-    )
+    response = model.generate_content(prompt)
     return (response.text or "").strip()
 
+
 if __name__ == "__main__":
-    print(simplify_text("Artificial intelligence learns patterns from data to make predictions."))
+    print(
+        simplify_text(
+            "Artificial intelligence learns patterns from data to make predictions."
+        )
+    )
