@@ -1,40 +1,42 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { MainContent } from './components/MainContent';
-import { clarifyDocument } from './services/api';
-import { AppState, SimplifiedData, UploadedFile } from './types';
+import { sendChatMessage } from './services/api';
+import { AppState, UploadedFile, ChatMessage } from './types';
 import { useAccessibility } from './hooks/useAccessibility';
 import { useTheme } from './hooks/useTheme';
 import { Toast } from './components/Toast';
 import { MenuIcon, CloseIcon } from './components/icons/Icons';
 import { AccessibilityMenu } from './components/AccessibilityMenu';
+import { LocalizationProvider } from './context/LocalizationContext';
 
-export default function App() {
+function AppContent() {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [appState, setAppState] = useState<AppState>('idle');
-  const [simplifiedData, setSimplifiedData] = useState<SimplifiedData | null>(null);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [audioError, setAudioError] = useState<string | null>(null);
   
   const { isHighContrast, isLargeText, toggleHighContrast, toggleLargeText } = useAccessibility();
   const { theme, toggleTheme } = useTheme();
   
-  const [sidebarWidth, setSidebarWidth] = useState(384);
+  const [sidebarWidth, setSidebarWidth] = useState(window.innerWidth / 2);
   const isResizing = useRef(false);
 
-  const handleSubmit = useCallback(async (text: string, language: string, file: UploadedFile | null) => {
+  const handleSendMessage = useCallback(async (text: string, language: string, file: UploadedFile | null) => {
     setAppState('loading');
-    setSimplifiedData(null);
-    setError(null);
     setIsMobileSidebarOpen(false);
+
+    setMessages(prev => [...prev, { role: 'user', text }]);
+    
     try {
-      const data = await clarifyDocument(text, language, file);
-      setSimplifiedData(data);
+      const data = await sendChatMessage(text, language, file);
+      setMessages(prev => [...prev, { role: 'model', text: data.simplifiedText, audioUrl: data.audioUrl }]);
       setAppState('success');
     } catch (err) {
-      setError('Failed to simplify the document. Please try again.');
+      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred.';
+      setMessages(prev => [...prev, { role: 'system-error', text: `Failed to get response: ${errorMessage}` }]);
       setAppState('error');
     }
   }, []);
@@ -80,7 +82,7 @@ export default function App() {
           setMobileOpen={setIsMobileSidebarOpen}
           isCollapsed={isSidebarCollapsed}
           setCollapsed={setIsSidebarCollapsed}
-          onSubmit={handleSubmit}
+          onSubmit={handleSendMessage}
           isLoading={appState === 'loading'}
           isAudioPlaying={isAudioPlaying}
           theme={theme}
@@ -104,9 +106,8 @@ export default function App() {
         
         <main className="flex-1 overflow-y-auto p-4 md:p-8 pt-16 md:pt-8">
           <MainContent
-            appState={appState}
-            data={simplifiedData}
-            error={error}
+            isLoading={appState === 'loading'}
+            messages={messages}
             onPlayStateChange={setIsAudioPlaying}
             onAudioError={handleAudioError}
           />
@@ -120,4 +121,12 @@ export default function App() {
       />
     </div>
   );
+}
+
+export default function App() {
+  return (
+    <LocalizationProvider>
+      <AppContent />
+    </LocalizationProvider>
+  )
 }

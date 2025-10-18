@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { PlayIcon, PauseIcon } from './icons/Icons';
+import { useLocalization } from '../context/LocalizationContext';
 
 interface AudioPlayerProps {
   src: string;
@@ -13,6 +14,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, onPlayStateChange
   const [currentTime, setCurrentTime] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const progressBarRef = useRef<HTMLInputElement | null>(null);
+  const { t } = useLocalization();
 
   useEffect(() => {
     onPlayStateChange(isPlaying);
@@ -81,7 +83,7 @@ export const AudioPlayer: React.FC<AudioPlayerProps> = ({ src, onPlayStateChange
       <button
         onClick={togglePlayPause}
         className="p-3 bg-purple-600 hover:bg-purple-700 rounded-full text-white transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-purple-500"
-        aria-label={isPlaying ? 'Pause' : 'Play'}
+        aria-label={t(isPlaying ? 'pauseAudio' : 'playAudio')}
       >
         {isPlaying ? <PauseIcon /> : <PlayIcon />}
       </button>

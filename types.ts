@@ -5,6 +5,14 @@ export interface SimplifiedData {
   audioUrl: string;
 }
 
+export type ChatRole = 'user' | 'model' | 'system-error';
+
+export interface ChatMessage {
+  role: ChatRole;
+  text: string;
+  audioUrl?: string;
+}
+
 export interface Language {
   code: string;
   name: string;

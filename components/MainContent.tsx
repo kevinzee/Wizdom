@@ -1,65 +1,86 @@
-import React from 'react';
-import { AppState, SimplifiedData } from '../types';
+import React, { useEffect, useRef } from 'react';
+import { ChatMessage } from '../types';
 import { AudioPlayer } from './AudioPlayer';
 import { SpinnerIcon } from './icons/Icons';
+import { useLocalization } from '../context/LocalizationContext';
 
 interface MainContentProps {
-  appState: AppState;
-  data: SimplifiedData | null;
-  error: string | null;
+  isLoading: boolean;
+  messages: ChatMessage[];
   onPlayStateChange: (isPlaying: boolean) => void;
   onAudioError: () => void;
 }
 
-export const MainContent: React.FC<MainContentProps> = ({ appState, data, error, onPlayStateChange, onAudioError }) => {
+const TypingIndicator: React.FC = () => (
+  <div className="flex items-center space-x-2">
+      <div className="w-2 h-2 bg-gray-500 rounded-full animate-pulse [animation-delay:-0.3s]"></div>
+      <div className="w-2 h-2 bg-gray-500 rounded-full animate-pulse [animation-delay:-0.15s]"></div>
+      <div className="w-2 h-2 bg-gray-500 rounded-full animate-pulse"></div>
+  </div>
+);
+
+const ChatBubble: React.FC<{ message: ChatMessage; onPlayStateChange: (isPlaying: boolean) => void; onAudioError: () => void; }> = ({ message, onPlayStateChange, onAudioError }) => {
+  const isUser = message.role === 'user';
+  const isError = message.role === 'system-error';
+
+  const bubbleClasses = {
+    base: 'p-4 rounded-2xl max-w-xl lg:max-w-3xl whitespace-pre-wrap',
+    user: 'bg-purple-600 text-white self-end',
+    model: 'bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 self-start shadow-md',
+    error: 'bg-red-100 dark:bg-red-900/50 border border-red-500 text-red-700 dark:text-red-300 self-start',
+  };
+  
+  const roleClass = isUser ? bubbleClasses.user : (isError ? bubbleClasses.error : bubbleClasses.model);
+
+  return (
+    <div className={`${bubbleClasses.base} ${roleClass}`}>
+      <p>{message.text}</p>
+      {message.audioUrl && (
+        <div className="mt-4">
+          <AudioPlayer 
+            src={message.audioUrl} 
+            onPlayStateChange={onPlayStateChange} 
+            onError={onAudioError}
+          />
+        </div>
+      )}
+    </div>
+  );
+};
+
+export const MainContent: React.FC<MainContentProps> = ({ isLoading, messages, onPlayStateChange, onAudioError }) => {
+  const { t } = useLocalization();
+  const bottomOfChatRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    bottomOfChatRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isLoading]);
 
   const renderContent = () => {
-    switch (appState) {
-      case 'loading':
-        return (
-          <div className="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400">
-            <SpinnerIcon />
-            <p className="mt-4 text-lg">Simplifying your document...</p>
+    if (messages.length === 0 && !isLoading) {
+      return (
+        <div className="flex items-center justify-center h-full text-center text-gray-400 dark:text-gray-500">
+          <div>
+            <h2 className="text-3xl font-semibold text-gray-600 dark:text-gray-400">{t('welcomeMessage', { brandName: 'SpeakEasy' })}</h2>
+            <p className="mt-2">{t('getStartedPrompt')}</p>
           </div>
-        );
-      case 'success':
-        return (
-          data && (
-            <div className="flex flex-col h-full">
-              <div className="flex-grow overflow-y-auto bg-white/50 dark:bg-gray-800/30 p-6 rounded-lg shadow-inner">
-                <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Simplified Document</h2>
-                <p className="text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">{data.simplifiedText}</p>
-              </div>
-              <div className="flex-shrink-0 mt-6">
-                <AudioPlayer 
-                  src={data.audioUrl} 
-                  onPlayStateChange={onPlayStateChange} 
-                  onError={onAudioError} 
-                />
-              </div>
-            </div>
-          )
-        );
-      case 'error':
-        return (
-          <div className="flex items-center justify-center h-full">
-            <div className="bg-red-100 dark:bg-red-900/50 border border-red-500 dark:border-red-700 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg" role="alert">
-              <strong className="font-bold">Error: </strong>
-              <span className="block sm:inline">{error}</span>
-            </div>
-          </div>
-        );
-      case 'idle':
-      default:
-        return (
-          <div className="flex items-center justify-center h-full text-center text-gray-400 dark:text-gray-500">
-            <div>
-              <h2 className="text-3xl font-semibold text-gray-600 dark:text-gray-400">Welcome to SpeakEasy</h2>
-              <p className="mt-2">Enter some text or upload a file on the left to get started.</p>
-            </div>
-          </div>
-        );
+        </div>
+      );
     }
+
+    return (
+      <div className="flex flex-col space-y-4">
+        {messages.map((msg, index) => (
+          <ChatBubble key={index} message={msg} onPlayStateChange={onPlayStateChange} onAudioError={onAudioError} />
+        ))}
+        {isLoading && (
+          <div className="p-4 rounded-2xl max-w-sm bg-white dark:bg-gray-800 self-start shadow-md">
+            <TypingIndicator />
+          </div>
+        )}
+        <div ref={bottomOfChatRef} />
+      </div>
+    );
   };
 
   return (
