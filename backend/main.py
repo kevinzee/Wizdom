@@ -1,17 +1,18 @@
-# backend/main.py (updated with consolidated imports)
+# backend/main.py
 from fastapi import FastAPI, UploadFile, File
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 import io
+import base64
 from pypdf import PdfReader
-from .gemini_client import simplify_text, simplify_extracted_text
+from .gemini_client import simplify_text, simplify_extracted_text, translate_text
 from .elevenlabs_client import synthesize_speech
 
 load_dotenv()
 
-app = FastAPI(title="SpeakEasy API", version="1.1")
+app = FastAPI(title="Wizdom API", version="1.1")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -25,11 +26,16 @@ app.add_middleware(
 )
 
 # ===== Schemas =====
-class SimplifyIn(BaseModel):
-    text: str = Field(..., min_length=1, description="Raw text to simplify")
+class TranslateIn(BaseModel):
+    text: str = Field(..., min_length=1, description="Text to translate")
+    target_language: str = Field(..., description="Target language (e.g., 'Spanish', 'French', 'Mandarin')")
 
-class SimplifyOut(BaseModel):
-    simplified: str
+class TranslateOut(BaseModel):
+    translated: str
+
+class SpeakOut(BaseModel):
+    text: str
+    audio: str  # Base64 encoded audio
 
 # ===== Utilities =====
 def _error(msg: str, code: int = 400):
@@ -58,53 +64,41 @@ def extract_text_from_file(file_bytes: bytes, content_type: str) -> str:
 def health():
     return {"ok": True}
 
-@app.post("/simplify", response_model=SimplifyOut)
-async def simplify(payload: SimplifyIn):
-    simplified = simplify_text(payload.text)
-    return {"simplified": simplified}
-
-@app.post("/speak")
-async def speak(payload: SimplifyIn):
-    simplified = simplify_text(payload.text)
-    audio_bytes = synthesize_speech(simplified)
-    return StreamingResponse(io.BytesIO(audio_bytes), media_type="audio/mpeg")
-
-@app.post("/simplify_file", response_model=SimplifyOut)
-async def simplify_file(file: UploadFile = File(...)):
+# ===== SPEAK Endpoints (Text + Audio Output) =====
+@app.post("/speak_text_input", response_model=SpeakOut)
+async def speak_text_input(payload: TranslateIn):
     """
-    Upload a file (PDF or TXT), extract text, and return simplified version.
+    Simplify text, translate to target language, narrate it, and return both text and audio.
+    Example: {"text": "Hello world", "target_language": "Spanish"}
     """
-    supported_types = {"application/pdf", "text/plain"}
-    
-    if file.content_type not in supported_types:
-        return _error("Only PDF or plain text files are supported.", 415)
-    
     try:
-        file_bytes = await file.read()
+        # Step 1: Simplify
+        simplified = simplify_text(payload.text)
         
-        if not file_bytes:
-            return _error("Uploaded file is empty.", 422)
+        # Step 2: Translate
+        translated = translate_text(simplified, payload.target_language)
         
-        # Extract text from file
-        extracted_text = extract_text_from_file(file_bytes, file.content_type)
+        # Step 3: Speak
+        audio_bytes = synthesize_speech(translated)
         
-        if not extracted_text.strip():
-            return _error("No extractable text found in file.", 422)
+        # Convert audio to base64
+        audio_base64 = base64.b64encode(audio_bytes).decode("utf-8")
         
-        # Simplify the extracted text
-        simplified = simplify_extracted_text(extracted_text)
-        
-        return {"simplified": simplified}
-    
-    except ValueError as e:
-        return _error(str(e), 422)
+        return {
+            "text": translated,
+            "audio": audio_base64
+        }
     except Exception as e:
-        return _error(f"An error occurred processing the file: {str(e)}", 500)
+        return _error(f"Simplification, translation, or speech synthesis failed: {str(e)}", 500)
 
-@app.post("/speak_file")
-async def speak_file(file: UploadFile = File(...)):
+@app.post("/speak_file_input", response_model=SpeakOut)
+async def speak_file_input(
+    file: UploadFile = File(...),
+    target_language: str = ""
+):
     """
-    Upload a file, simplify it, and return audio narration.
+    Upload a file, simplify it, translate to target language, narrate it, and return both text and audio.
+    Query parameter: target_language (required)
     """
     supported_types = {"application/pdf", "text/plain"}
     
@@ -122,16 +116,42 @@ async def speak_file(file: UploadFile = File(...)):
         if not extracted_text.strip():
             return _error("No extractable text found in file.", 422)
         
+        # Step 1: Simplify
         simplified = simplify_extracted_text(extracted_text)
-        audio_bytes = synthesize_speech(simplified)
         
-        return StreamingResponse(io.BytesIO(audio_bytes), media_type="audio/mpeg")
+        # Step 2: Translate
+        translated = translate_text(simplified, target_language)
+        
+        # Step 3: Speak
+        audio_bytes = synthesize_speech(translated)
+        
+        # Convert audio to base64
+        audio_base64 = base64.b64encode(audio_bytes).decode("utf-8")
+        
+        return {
+            "text": translated,
+            "audio": audio_base64
+        }
     
     except ValueError as e:
         return _error(str(e), 422)
     except Exception as e:
-        return _error(f"An error occurred processing the file: {str(e)}", 500)
+        return _error(f"Simplification, translation, or speech synthesis failed: {str(e)}", 500)
+
+# ===== TRANSLATE Endpoint (UI Localization) =====
+@app.post("/translate", response_model=TranslateOut)
+async def translate(payload: TranslateIn):
+    """
+    Translate text to a target language.
+    Used for UI localization and content translation.
+    Example: {"text": "Hello world", "target_language": "Spanish"}
+    """
+    try:
+        translated = translate_text(payload.text, payload.target_language)
+        return {"translated": translated}
+    except Exception as e:
+        return _error(f"Translation failed: {str(e)}", 500)
 
 @app.get("/")
 def root():
-    return {"message": "Welcome to the SpeakEasy API — use /simplify, /speak, /simplify_file, or /speak_file endpoints."}
+    return {"message": "Welcome to the Wizdom API — use /speak_text_input, /speak_file_input, or /translate endpoints."}

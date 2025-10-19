@@ -78,6 +78,32 @@ def simplify_large_text_chunked(text: str, chunk_size: int = 5000) -> str:
     combined = "\n\n".join(simplified_chunks)
     return simplify_text(combined)
 
+def translate_text(text: str, target_language: str) -> str:
+    """
+    Translate text to a target language using Gemini.
+    
+    Args:
+        text: The text to translate
+        target_language: Language name to translate to (e.g., "Spanish", "French", "Mandarin")
+    
+    Returns:
+        Translated text
+    """
+    prompt = f"""
+You are an expert translator. Translate the following text to {target_language}.
+
+Requirements:
+- Maintain the meaning and tone of the original text
+- Keep it natural and conversational
+- Do NOT include any explanations or notes, just the translation
+- If the text is already in {target_language}, return it as-is
+
+Text to translate:
+{text}
+    """
+    response = model.generate_content(prompt)
+    return (response.text or "").strip()
+
 
 if __name__ == "__main__":
     print(
