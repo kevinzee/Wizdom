@@ -2,8 +2,8 @@ import { SimplifiedData, UploadedFile, ChatMessage } from '../types';
 import { LANGUAGES } from '../constants';
 import { GoogleGenAI, Chat } from '@google/genai';
 
+// 👇 Use your Cloudflare public backend URL
 const BACKEND_URL = "https://rough-import-oven-encountered.trycloudflare.com";
-
 
 let genAI: GoogleGenAI | undefined;
 let chatSession: Chat | undefined;
@@ -25,7 +25,7 @@ try {
 }
 
 // ========================================================
-// Existing Gemini logic (unchanged) + backend fallback logic
+// Main chat function (Gemini first, backend fallback)
 // ========================================================
 export const sendChatMessage = async (
   message: string, 
@@ -34,7 +34,7 @@ export const sendChatMessage = async (
 ): Promise<SimplifiedData> => {
   const languageName = LANGUAGES.find(l => l.code === language)?.name || 'the selected language';
 
-  // 1️⃣ Try using local Gemini logic first (if API key is configured)
+  // 1️⃣ Try using local Gemini logic first
   if (chatSession) {
     const prompt = `
       User input: "${message}"
@@ -62,31 +62,24 @@ export const sendChatMessage = async (
     };
   }
 
-  // 2️⃣ If Gemini isn’t configured locally, call backend instead
+  // 2️⃣ If Gemini isn’t configured locally, call backend
   try {
-    const response = await fetch(`${BACKEND_URL}/simplify`, {
+    const response = await fetch(`${BACKEND_URL}/speak_text_input`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: message }),
+      body: JSON.stringify({
+        text: message,
+        target_language: languageName,
+      }),
     });
 
     if (!response.ok) throw new Error(`Backend error: ${response.statusText}`);
 
     const data = await response.json();
 
-    // If audio support is desired
-    const audioRes = await fetch(`${BACKEND_URL}/speak`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: data.simplified }),
-    });
-
-    const blob = await audioRes.blob();
-    const audioUrl = URL.createObjectURL(blob);
-
     return {
-      simplifiedText: data.simplified,
-      audioUrl,
+      simplifiedText: data.text,
+      audioUrl: `data:audio/mp3;base64,${data.audio}`,
     };
   } catch (backendError) {
     console.error("Backend call failed:", backendError);
@@ -95,7 +88,7 @@ export const sendChatMessage = async (
 };
 
 // ========================================================
-// Translations logic (untouched but now can fall back to backend if desired)
+// Translations logic (UI localization)
 // ========================================================
 const translationsCache: Record<string, Record<string, string>> = {};
 
@@ -107,7 +100,7 @@ export const getTranslations = async (
     return translationsCache[languageName];
   }
 
-  // 1️⃣ Try Gemini translation
+  // 1️⃣ Try Gemini translation first
   if (genAI) {
     const modelName = 'gemini-2.5-flash';
     const prompt = `Translate the JSON values into an informal and casual tone of '${languageName}'. IMPORTANT: Any placeholder text in curly braces (like "{brandName}") must be preserved exactly as is in the translated strings. Do not translate the text inside the curly braces. Return only a valid JSON object with the identical keys.
@@ -134,18 +127,24 @@ export const getTranslations = async (
     }
   }
 
-  // 2️⃣ Fallback: call backend for translations (if endpoint available)
+  // 2️⃣ Fallback: use backend translation
   try {
     const res = await fetch(`${BACKEND_URL}/translate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ language: languageName, strings: defaultStrings }),
+      body: JSON.stringify({
+        text: JSON.stringify(defaultStrings),
+        target_language: languageName,
+      }),
     });
 
     if (!res.ok) throw new Error("Backend translation failed");
     const data = await res.json();
-    translationsCache[languageName] = data;
-    return data;
+
+    // Backend returns { translated: string }
+    const translations = JSON.parse(data.translated);
+    translationsCache[languageName] = translations;
+    return translations;
   } catch (backendError) {
     console.warn("Backend translation not available, returning defaults.");
     return defaultStrings;
