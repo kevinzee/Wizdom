@@ -2,7 +2,8 @@ import { SimplifiedData, UploadedFile, ChatMessage } from '../types';
 import { LANGUAGES } from '../constants';
 import { GoogleGenAI, Chat } from '@google/genai';
 
-const BACKEND_URL = "https://yoshiko-unforeshortened-kieran.ngrok-free.dev"; // 👈 ngrok backend URL
+const BACKEND_URL = "https://women-announces-messages-url.trycloudflare.com";
+
 
 let genAI: GoogleGenAI | undefined;
 let chatSession: Chat | undefined;
