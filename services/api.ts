@@ -3,7 +3,7 @@ import { LANGUAGES } from '../constants';
 import { GoogleGenAI, Chat } from '@google/genai';
 
 // 👇 Use your Cloudflare public backend URL
-const BACKEND_URL = "https://instance-southampton-pit-whats.trycloudflare.com";
+const BACKEND_URL = "https://cigarette-remarkable-perform-morning.trycloudflare.com";
 
 let genAI: GoogleGenAI | undefined;
 let chatSession: Chat | undefined;
