@@ -3,14 +3,14 @@ import { LANGUAGES } from '../constants';
 import { GoogleGenAI, Chat } from '@google/genai';
 
 // 👇 Use your Cloudflare public backend URL
-const BACKEND_URL = "https://cigarette-remarkable-perform-morning.trycloudflare.com";
+const BACKEND_URL = "https://connector-austin-however-disclaimer.trycloudflare.com";
 
 let genAI: GoogleGenAI | undefined;
 let chatSession: Chat | undefined;
 
 try {
-  if (process.env.API_KEY) {
-    genAI = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  if (process.env.GEMINI_API_KEY) {
+    genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
     chatSession = genAI.chats.create({
       model: 'gemini-2.5-flash',
       config: {
@@ -18,23 +18,86 @@ try {
       },
     });
   } else {
-    console.warn("API_KEY environment variable not set. API calls will be disabled.");
+    console.warn("GEMINI_API_KEY environment variable not set. Local Gemini will be disabled.");
   }
 } catch (error) {
   console.error("Failed to initialize GoogleGenAI. Make sure the API key is valid.", error);
 }
 
 // ========================================================
-// Main chat function (Gemini first, backend fallback)
+// File Upload Handler (for PDF/TXT files)
+// ========================================================
+export const sendFileMessage = async (
+  file: UploadedFile,
+  language: string
+): Promise<SimplifiedData> => {
+  const languageName = LANGUAGES.find(l => l.code === language)?.name || 'the selected language';
+
+  try {
+    // Create FormData for multipart/form-data request
+    const formData = new FormData();
+    
+    // Convert base64 or text content back to Blob
+    let blob: Blob;
+    if (file.content.startsWith('data:')) {
+      // It's base64 encoded (shouldn't happen for text files, but just in case)
+      const base64 = file.content.split(',')[1];
+      const byteCharacters = atob(base64);
+      const byteArray = new Uint8Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteArray[i] = byteCharacters.charCodeAt(i);
+      }
+      blob = new Blob([byteArray], { type: file.type === 'pdf' ? 'application/pdf' : 'text/plain' });
+    } else {
+      // It's plain text
+      blob = new Blob([file.content], { type: 'text/plain' });
+    }
+
+    formData.append('file', blob, file.name);
+
+    // Send to backend /speak_file_input endpoint with target_language as query param
+    const response = await fetch(
+      `${BACKEND_URL}/speak_file_input?target_language=${encodeURIComponent(languageName)}`,
+      {
+        method: "POST",
+        body: formData,
+        // Note: Don't set Content-Type header; browser will set it with boundary
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Backend file error: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+
+    return {
+      simplifiedText: data.text,
+      audioUrl: `data:audio/mp3;base64,${data.audio}`,
+    };
+  } catch (error) {
+    console.error("File upload failed:", error);
+    throw new Error(`File processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};
+
+// ========================================================
+// Main chat function (File first, then Gemini, then backend)
 // ========================================================
 export const sendChatMessage = async (
   message: string, 
   language: string, 
   file: UploadedFile | null
 ): Promise<SimplifiedData> => {
+  // IMPORTANT: Check for files FIRST before trying Gemini
+  // This ensures file uploads go to /speak_file_input, not local Gemini
+  if (file && (file.type === 'text' || file.type === 'pdf')) {
+    return sendFileMessage(file, language);
+  }
+
   const languageName = LANGUAGES.find(l => l.code === language)?.name || 'the selected language';
 
-  // Try using local Gemini logic first
+  // Try using local Gemini logic second (only for text/image, not files)
   if (chatSession) {
     const prompt = `
       User input: "${message}"
@@ -62,7 +125,7 @@ export const sendChatMessage = async (
     };
   }
 
-  // If Gemini isn’t configured locally, call backend
+  // If Gemini isn't configured locally, call backend
   try {
     const response = await fetch(`${BACKEND_URL}/speak_text_input`, {
       method: "POST",
@@ -100,7 +163,7 @@ export const getTranslations = async (
     return translationsCache[languageName];
   }
 
-  // 1Try Gemini translation first
+  // Try Gemini translation first
   if (genAI) {
     const modelName = 'gemini-2.5-flash';
     const prompt = `Translate the JSON values into an informal and casual tone of '${languageName}'. IMPORTANT: Any placeholder text in curly braces (like "{brandName}") must be preserved exactly as is in the translated strings. Do not translate the text inside the curly braces. Return only a valid JSON object with the identical keys.

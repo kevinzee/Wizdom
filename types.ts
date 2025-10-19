@@ -20,6 +20,6 @@ export interface Language {
 
 export interface UploadedFile {
   name: string;
-  type: 'text' | 'image';
+  type: 'text' | 'image' | 'pdf';
   content: string; // File content for text files, base64 data URL for images
 }

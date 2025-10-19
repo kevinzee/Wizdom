@@ -42,14 +42,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
     const reader = new FileReader();
     
     if (file.type.startsWith('image/')) {
+      // Handle images
       reader.onload = (e) => {
         setUploadedFile({ name: file.name, type: 'image', content: e.target?.result as string });
       };
       reader.readAsDataURL(file);
+    } else if (file.type === 'text/plain' || file.name.endsWith('.txt')) {
+      // Handle text files
+      reader.onload = (e) => {
+        setUploadedFile({ name: file.name, type: 'text', content: e.target?.result as string });
+      };
+      reader.readAsText(file);
+    } else if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
+      // Handle PDFs - read as base64
+      reader.onload = (e) => {
+        setUploadedFile({ name: file.name, type: 'pdf', content: e.target?.result as string });
+      };
+      reader.readAsDataURL(file);
     } else {
-        // For non-image files, we can just show the name.
-        // The content will be extracted by the user if needed, or ignored.
-        setUploadedFile({ name: file.name, type: 'text', content: `File: ${file.name}`});
+      setError('Only images (PNG, JPG, etc.), text files (.txt), and PDFs are supported.');
+      return;
     }
 
     if (event.target) {
