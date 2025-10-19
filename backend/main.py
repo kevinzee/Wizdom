@@ -31,7 +31,7 @@ app.add_middleware(
         "http://127.0.0.1:5173",
         "http://10.141.141.54:3000",
         "http://10.141.141.54:3001",
-        "https://connector-austin-however-disclaimer.trycloudflare.com",
+        "https://hide-military-development-summer.trycloudflare.com",
     ],
     allow_credentials=True,
     allow_methods=["*"],
