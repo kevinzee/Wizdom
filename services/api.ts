@@ -2,7 +2,7 @@ import { SimplifiedData, UploadedFile, ChatMessage } from '../types';
 import { LANGUAGES } from '../constants';
 import { GoogleGenAI, Chat } from '@google/genai';
 
-const BACKEND_URL = "https://women-announces-messages-url.trycloudflare.com";
+const BACKEND_URL = "https://rough-import-oven-encountered.trycloudflare.com";
 
 
 let genAI: GoogleGenAI | undefined;
