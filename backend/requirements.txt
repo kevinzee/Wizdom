@@ -1,0 +1,14 @@
+fastapi
+uvicorn
+python-dotenv
+google-generativeai
+elevenlabs
+textstat
+tenacity
+reportlab
+
+# extras needed by your endpoints
+python-multipart   # for UploadFile form handling
+pypdf              # lightweight PDF text extraction
+httpx              # async HTTP client (useful for tests / integrations)
+requests           # many SDKs depend on this

@@ -1,0 +1,65 @@
+# --- Dependencies ---
+node_modules/
+.venv/
+venv/
+ENV/
+env/
+env.bak/
+
+# --- Environment Variables ---
+.env
+.env.local
+.env.*.local
+*.env
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.py.class
+*.log
+*.pot
+*.pyc
+*.db
+*.sqlite3
+.pytest_cache/
+
+# --- Frontend Build ---
+dist/
+build/
+.vite/
+
+# --- Audio Files ---
+audio/
+*.mp3
+*.wav
+
+# --- Test/Generated Files ---
+filled_*.pdf
+acroForm.pdf
+*.sqlite3
+npm-debug.log
+yarn-error.log
+
+# --- macOS ---
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# --- IDEs / Editors ---
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-workspace
+*.sublime-project
+
+# --- OS / Misc ---
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# --- IDE specific ---
+*.iml
+.gradle
