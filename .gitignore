@@ -1,34 +1,46 @@
-# --- Python ---
-__pycache__/
-*.py[cod]
-*.pyo
-*.pyd
-*.py.class
-
-# Virtual environment
+# --- Dependencies ---
+node_modules/
 .venv/
 venv/
 ENV/
 env/
 env.bak/
 
-# Dotenv and secrets
+# --- Environment Variables ---
 .env
+.env.local
+.env.*.local
 *.env
 
-# Byte-compiled / temporary files
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.py.class
 *.log
 *.pot
 *.pyc
-*.pyo
-*.pyd
 *.db
 *.sqlite3
+.pytest_cache/
 
-# --- Audio files ---
+# --- Frontend Build ---
+dist/
+build/
+.vite/
+
+# --- Audio Files ---
 audio/
 *.mp3
 *.wav
+
+# --- Test/Generated Files ---
+filled_*.pdf
+acroForm.pdf
+*.sqlite3
+npm-debug.log
+yarn-error.log
 
 # --- macOS ---
 .DS_Store
@@ -40,15 +52,14 @@ audio/
 .idea/
 *.swp
 *.swo
-
-# --- Node / Frontend (if any) ---
-node_modules/
-npm-debug.log
-yarn-error.log
-dist/
-build/
+*.sublime-workspace
+*.sublime-project
 
 # --- OS / Misc ---
 Thumbs.db
 ehthumbs.db
 Desktop.ini
+
+# --- IDE specific ---
+*.iml
+.gradle
