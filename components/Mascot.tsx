@@ -1,26 +1,59 @@
 import React from 'react';
 
+// Runtime import for image
+const wizardImage = new URL('../assets/wizard.png', import.meta.url).href;
+
 interface MascotProps {
   isAudioPlaying: boolean;
   isCollapsed?: boolean;
 }
 
 export const Mascot: React.FC<MascotProps> = ({ isAudioPlaying, isCollapsed }) => {
-  const haloClasses = `absolute inset-0 bg-purple-500 rounded-full blur-xl transition-all duration-500 ${isAudioPlaying ? 'halo-animate' : 'opacity-50'}`;
-  const sizeClasses = isCollapsed ? 'w-16 h-16 my-4' : 'w-32 h-32 my-8';
-  const innerSizeClasses = isCollapsed ? 'w-14 h-14' : 'w-28 h-28';
-  const iconContainerClasses = isCollapsed ? 'w-10 h-10' : 'w-16 h-16';
-  const iconClasses = isCollapsed ? 'w-6 h-6' : 'w-10 h-10';
+  // Slightly larger outer and inner sizes so the mascot reads a bit bigger
+  const sizeClasses = isCollapsed ? 'w-20 h-20 my-6' : 'w-64 h-64 my-12';
+  const innerSizeClasses = isCollapsed ? 'w-16 h-16' : 'w-56 h-56';
 
   return (
-    <div className={`relative flex items-center justify-center transition-all duration-150 ${sizeClasses}`}>
-      <div className={haloClasses}></div>
-      <div className={`relative bg-gradient-to-br from-purple-600 to-indigo-700 rounded-full shadow-lg flex items-center justify-center transition-all duration-150 ${innerSizeClasses}`}>
-         <div className={`bg-white/20 rounded-full flex items-center justify-center transition-all duration-150 ${iconContainerClasses}`}>
-            <svg className={`text-white transition-all duration-150 ${iconClasses}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
-            </svg>
-         </div>
+    <div
+      className={`relative flex items-center justify-center transition-all duration-500 ${sizeClasses}`}
+      style={{
+        // moves mascot slightly downward
+        marginTop: '2rem',
+      }}
+    >
+      {/* ✨ Halo / fade background */}
+      <div
+        className={`absolute -inset-20 rounded-full transition-all duration-1000 blur-[100px] ${
+          isAudioPlaying
+            ? 'bg-[radial-gradient(circle_at_center,rgba(168,85,247,0.3)_0%,rgba(147,51,234,0.18)_40%,rgba(139,92,246,0.06)_70%,rgba(147,51,234,0)_100%)] animate-[pulse_3s_ease-in-out_infinite]'
+            : 'bg-[radial-gradient(circle_at_center,rgba(168,85,247,0.22)_0%,rgba(147,51,234,0.12)_45%,rgba(147,51,234,0.0)_100%)] opacity-80'
+        }`}
+      ></div>
+
+      {/* 🪄 Inner faded orb */}
+      <div
+        className={`relative flex items-center justify-center overflow-hidden rounded-full transition-all duration-700 ${innerSizeClasses}`}
+        style={{
+          background:
+            'radial-gradient(circle at center, rgba(147, 51, 234, 0.35) 0%, rgba(139, 92, 246, 0.18) 55%, rgba(147, 51, 234, 0.0) 100%)',
+          boxShadow: isAudioPlaying
+            ? '0 0 60px 15px rgba(167, 139, 250, 0.25)'
+            : '0 0 40px 10px rgba(167, 139, 250, 0.15)',
+        }}
+      >
+        {/* 🧙‍♂️ Wizard Image (centered, larger, slightly lower) */}
+        <img
+          src={wizardImage}
+          alt="Wizdom Wizard Mascot"
+          className={`object-contain transition-transform duration-700 ease-in-out ${
+            isAudioPlaying ? 'scale-115 opacity-100' : 'scale-105 opacity-95'
+          }`}
+          style={{
+            width: '96%',
+            height: 'auto',
+            marginTop: '6%', // slight downward offset for visual balance
+          }}
+        />
       </div>
     </div>
   );

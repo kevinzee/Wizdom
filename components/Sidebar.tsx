@@ -119,40 +119,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         <div className="flex flex-col items-center">
-            <h1 className="text-5xl font-bold text-gray-900 dark:text-white mb-2">SpeakEasy</h1>
-            <Mascot isAudioPlaying={isAudioPlaying} />
+    <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-1">Wizdom</h1>
+  <div className="mt-2 mb-1 transform translate-y-2 scale-105">
+        <Mascot isAudioPlaying={isAudioPlaying} />
+      </div>
             <p className="mt-2 text-center text-gray-600 dark:text-gray-400">
                 {t('appSlogan')}
             </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="mt-8 space-y-4 flex-grow flex flex-col">
-          <div className="flex-grow space-y-4">
-            <div>
-                <label htmlFor="language-select" className="block mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-                    {t('simplifyIntoLabel')}
-                </label>
-                <div className="relative">
-                    <select
-                        id="language-select"
-                        value={language}
-                        onChange={(e) => setLanguage(e.target.value)}
-                        disabled={isLoading}
-                        required
-                        className={`w-full p-3 text-sm bg-white border border-gray-300 rounded-lg shadow-sm dark:bg-gray-800 dark:border-gray-600 focus:ring-purple-500 focus:border-purple-500 ${!language ? 'text-gray-500' : 'text-gray-900 dark:text-white'}`}
-                    >
-                        <option value="" disabled>
-                            {t('chooseLanguagePlaceholder')}
-                        </option>
-                        {LANGUAGES.map((lang) => (
-                            <option key={lang.code} value={lang.code}>
-                                {lang.name}
-                            </option>
-                        ))}
-                    </select>
-                    {isTranslating && <div className="absolute right-3 top-1/2 -translate-y-1/2"><SmallSpinnerIcon /></div>}
-                </div>
-            </div>
+  <form onSubmit={handleSubmit} className="mt-4 space-y-4 flex-grow flex flex-col">
+      <div className="flex-grow space-y-4">
 
             {uploadedFile && (
               <div className="flex items-center justify-between bg-purple-100 dark:bg-purple-900/50 p-2 rounded-lg">
@@ -166,12 +143,39 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {error && <p className="text-sm text-red-500">{error}</p>}
           </div>
             
-          <div className="mt-auto relative">
+      {/* Move language select closer to the chat box */}
+      <div className="mb-2">
+        <label htmlFor="language-select" className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">
+          {t('simplifyIntoLabel')}
+        </label>
+        <div className="relative">
+          <select
+            id="language-select"
+            value={language}
+            onChange={(e) => setLanguage(e.target.value)}
+            disabled={isLoading}
+            required
+            className={`w-full p-3 text-sm bg-white border border-gray-300 rounded-lg shadow-sm dark:bg-gray-800 dark:border-gray-600 focus:ring-purple-500 focus:border-purple-500 ${!language ? 'text-gray-500' : 'text-gray-900 dark:text-white'}`}
+          >
+            <option value="" disabled>
+              {t('chooseLanguagePlaceholder')}
+            </option>
+            {LANGUAGES.map((lang) => (
+              <option key={lang.code} value={lang.code}>
+                {lang.name}
+              </option>
+            ))}
+          </select>
+          {isTranslating && <div className="absolute right-3 top-1/2 -translate-y-1/2"><SmallSpinnerIcon /></div>}
+        </div>
+      </div>
+
+      <div className="mt-2 relative">
               <label htmlFor="chat-input" className="sr-only">{t('pasteTextLabel')}</label>
-              <textarea
-                  id="chat-input"
-                  rows={3}
-                  className="w-full p-3 pr-20 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg shadow-sm dark:bg-gray-800 dark:border-gray-600 dark:text-white focus:ring-purple-500 focus:border-purple-500 transition-all resize-none"
+        <textarea
+          id="chat-input"
+          rows={6}
+          className="w-full p-3 pr-20 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg shadow-sm dark:bg-gray-800 dark:border-gray-600 dark:text-white focus:ring-purple-500 focus:border-purple-500 transition-all resize-none min-h-[8rem]"
                   placeholder={t('pasteTextPlaceholder')}
                   value={text}
                   onChange={(e) => setText(e.target.value)}

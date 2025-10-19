@@ -61,7 +61,7 @@ export const MainContent: React.FC<MainContentProps> = ({ isLoading, messages, o
       return (
         <div className="flex items-center justify-center h-full text-center text-gray-400 dark:text-gray-500">
           <div>
-            <h2 className="text-3xl font-semibold text-gray-600 dark:text-gray-400">{t('welcomeMessage', { brandName: 'SpeakEasy' })}</h2>
+            <h2 className="text-3xl font-semibold text-gray-600 dark:text-gray-400">{t('welcomeMessage', { brandName: 'Wizdom' })}</h2>
             <p className="mt-2">{t('getStartedPrompt')}</p>
           </div>
         </div>
