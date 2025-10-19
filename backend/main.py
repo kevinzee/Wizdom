@@ -85,19 +85,29 @@ async def speak_text_input(payload: TranslateIn):
     """
     try:
         # Step 1: Simplify
+        print(f"DEBUG: Simplifying text: {payload.text[:50]}...")
         simplified = simplify_text(payload.text)
+        print(f"DEBUG: Simplified: {simplified[:50]}...")
 
         # Step 2: Translate
+        print(f"DEBUG: Translating to {payload.target_language}")
         translated = translate_text(simplified, payload.target_language)
+        print(f"DEBUG: Translated: {translated[:50]}...")
 
         # Step 3: Speak
+        print(f"DEBUG: Synthesizing speech")
         audio_bytes = synthesize_speech(translated)
+        print(f"DEBUG: Audio generated, size: {len(audio_bytes)}")
 
         # Convert audio to base64
         audio_base64 = base64.b64encode(audio_bytes).decode("utf-8")
 
         return {"text": translated, "audio": audio_base64}
     except Exception as e:
+        print(f"ERROR: {str(e)}")
+        import traceback
+
+        traceback.print_exc()
         return _error(
             f"Simplification, translation, or speech synthesis failed: {str(e)}", 500
         )
