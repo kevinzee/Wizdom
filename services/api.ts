@@ -34,7 +34,7 @@ export const sendChatMessage = async (
 ): Promise<SimplifiedData> => {
   const languageName = LANGUAGES.find(l => l.code === language)?.name || 'the selected language';
 
-  // 1️⃣ Try using local Gemini logic first
+  // Try using local Gemini logic first
   if (chatSession) {
     const prompt = `
       User input: "${message}"
@@ -62,7 +62,7 @@ export const sendChatMessage = async (
     };
   }
 
-  // 2️⃣ If Gemini isn’t configured locally, call backend
+  // If Gemini isn’t configured locally, call backend
   try {
     const response = await fetch(`${BACKEND_URL}/speak_text_input`, {
       method: "POST",
@@ -100,7 +100,7 @@ export const getTranslations = async (
     return translationsCache[languageName];
   }
 
-  // 1️⃣ Try Gemini translation first
+  // 1Try Gemini translation first
   if (genAI) {
     const modelName = 'gemini-2.5-flash';
     const prompt = `Translate the JSON values into an informal and casual tone of '${languageName}'. IMPORTANT: Any placeholder text in curly braces (like "{brandName}") must be preserved exactly as is in the translated strings. Do not translate the text inside the curly braces. Return only a valid JSON object with the identical keys.
@@ -127,7 +127,7 @@ export const getTranslations = async (
     }
   }
 
-  // 2️⃣ Fallback: use backend translation
+  // Fallback: use backend translation
   try {
     const res = await fetch(`${BACKEND_URL}/translate`, {
       method: "POST",
