@@ -18,7 +18,7 @@ def play_audio(filepath: str):
     """Play audio file (macOS)."""
     try:
         subprocess.run(["open", filepath], check=True)
-        print(f"▶️  Playing {filepath}")
+        print(f"Playing {filepath}")
     except Exception as e:
         print(f"Could not play audio: {e}")
 
@@ -30,7 +30,7 @@ def test_speak_text_input():
     
     payload = {
         "text": "The Federal Reserve is an independent agency of the federal government charged with managing the money supply and interest rates to promote maximum employment and stable prices.",
-        "target_language": "Spanish"
+        "target_language": "Polish"
     }
     
     try:
