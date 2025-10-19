@@ -15,6 +15,8 @@ interface SidebarProps {
   isAudioPlaying: boolean;
   theme: 'light' | 'dark';
   toggleTheme: () => void;
+  activeMode: 'simplify' | 'fill-form';
+  setActiveMode: (mode: 'simplify' | 'fill-form') => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -27,6 +29,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isAudioPlaying,
   theme,
   toggleTheme,
+  activeMode,
+  setActiveMode,
 }) => {
   const [text, setText] = useState('');
   const [uploadedFile, setUploadedFile] = useState<UploadedFile | null>(null);
@@ -42,19 +46,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
     const reader = new FileReader();
     
     if (file.type.startsWith('image/')) {
-      // Handle images
       reader.onload = (e) => {
         setUploadedFile({ name: file.name, type: 'image', content: e.target?.result as string });
       };
       reader.readAsDataURL(file);
     } else if (file.type === 'text/plain' || file.name.endsWith('.txt')) {
-      // Handle text files
       reader.onload = (e) => {
         setUploadedFile({ name: file.name, type: 'text', content: e.target?.result as string });
       };
       reader.readAsText(file);
     } else if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
-      // Handle PDFs - read as base64
       reader.onload = (e) => {
         setUploadedFile({ name: file.name, type: 'pdf', content: e.target?.result as string });
       };
@@ -81,7 +82,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     }
     setError(null);
     onSubmit(text, language, uploadedFile);
-    setText(''); // Clear input after sending
+    setText('');
   };
   
   const handleRemoveFile = () => {
@@ -97,7 +98,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
         handleSubmit(e);
     }
   }
-
 
   const collapsedContent = (
     <div className="h-full">
@@ -140,60 +140,84 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </p>
         </div>
 
-  <form onSubmit={handleSubmit} className="mt-4 space-y-4 flex-grow flex flex-col">
-      <div className="flex-grow space-y-4">
-
-            {uploadedFile && (
-              <div className="flex items-center justify-between bg-purple-100 dark:bg-purple-900/50 p-2 rounded-lg">
-                  <span className="text-sm text-purple-700 dark:text-purple-300 truncate pl-2">{uploadedFile.name}</span>
-                  <button onClick={handleRemoveFile} type="button" className="text-purple-500 hover:text-purple-700 text-xs font-bold p-1 rounded-full bg-white/50 dark:bg-black/20">
-                      &#x2715;
-                  </button>
-              </div>
-            )}
-            
-            {error && <p className="text-sm text-red-500">{error}</p>}
-          </div>
-            
-      {/* Move language select closer to the chat box */}
-      <div className="mb-2">
-        <label htmlFor="language-select" className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">
-          {t('simplifyIntoLabel')}
-        </label>
-        <div className="relative">
-          <select
-            id="language-select"
-            value={language}
-            onChange={(e) => setLanguage(e.target.value)}
-            disabled={isLoading}
-            required
-            className={`w-full p-3 text-sm bg-white border border-gray-300 rounded-lg shadow-sm dark:bg-gray-800 dark:border-gray-600 focus:ring-purple-500 focus:border-purple-500 ${!language ? 'text-gray-500' : 'text-gray-900 dark:text-white'}`}
+        {/* Mode Toggle Buttons */}
+        <div className="mt-6 flex gap-2 mb-6">
+          <button
+            onClick={() => setActiveMode('simplify')}
+            className={`flex-1 py-2 px-3 rounded-lg font-medium text-sm transition-colors ${
+              activeMode === 'simplify'
+                ? 'bg-purple-600 text-white'
+                : 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+            }`}
           >
-            <option value="" disabled>
-              {t('chooseLanguagePlaceholder')}
-            </option>
-            {LANGUAGES.map((lang) => (
-              <option key={lang.code} value={lang.code}>
-                {lang.name}
-              </option>
-            ))}
-          </select>
-          {isTranslating && <div className="absolute right-3 top-1/2 -translate-y-1/2"><SmallSpinnerIcon /></div>}
+            Simplify
+          </button>
+          <button
+            onClick={() => setActiveMode('fill-form')}
+            className={`flex-1 py-2 px-3 rounded-lg font-medium text-sm transition-colors ${
+              activeMode === 'fill-form'
+                ? 'bg-purple-600 text-white'
+                : 'bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+            }`}
+          >
+            Fill Form
+          </button>
         </div>
-      </div>
 
-      <div className="mt-2 relative">
-              <label htmlFor="chat-input" className="sr-only">{t('pasteTextLabel')}</label>
-        <textarea
-          id="chat-input"
-          rows={6}
-          className="w-full p-3 pr-20 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg shadow-sm dark:bg-gray-800 dark:border-gray-600 dark:text-white focus:ring-purple-500 focus:border-purple-500 transition-all resize-none min-h-[8rem]"
-                  placeholder={t('pasteTextPlaceholder')}
-                  value={text}
-                  onChange={(e) => setText(e.target.value)}
-                  onKeyDown={handleKeyDown}
+        {/* Simplify Mode Content */}
+        {activeMode === 'simplify' && (
+          <form onSubmit={handleSubmit} className="mt-4 space-y-4 flex-grow flex flex-col">
+            <div className="flex-grow space-y-4">
+              {uploadedFile && (
+                <div className="flex items-center justify-between bg-purple-100 dark:bg-purple-900/50 p-2 rounded-lg">
+                    <span className="text-sm text-purple-700 dark:text-purple-300 truncate pl-2">{uploadedFile.name}</span>
+                    <button onClick={handleRemoveFile} type="button" className="text-purple-500 hover:text-purple-700 text-xs font-bold p-1 rounded-full bg-white/50 dark:bg-black/20">
+                        &#x2715;
+                    </button>
+                </div>
+              )}
+              
+              {error && <p className="text-sm text-red-500">{error}</p>}
+            </div>
+              
+            <div className="mb-2">
+              <label htmlFor="language-select" className="block mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">
+                {t('simplifyIntoLabel')}
+              </label>
+              <div className="relative">
+                <select
+                  id="language-select"
+                  value={language}
+                  onChange={(e) => setLanguage(e.target.value)}
                   disabled={isLoading}
-              ></textarea>
+                  required
+                  className={`w-full p-3 text-sm bg-white border border-gray-300 rounded-lg shadow-sm dark:bg-gray-800 dark:border-gray-600 focus:ring-purple-500 focus:border-purple-500 ${!language ? 'text-gray-500' : 'text-gray-900 dark:text-white'}`}
+                >
+                  <option value="" disabled>
+                    {t('chooseLanguagePlaceholder')}
+                  </option>
+                  {LANGUAGES.map((lang) => (
+                    <option key={lang.code} value={lang.code}>
+                      {lang.name}
+                    </option>
+                  ))}
+                </select>
+                {isTranslating && <div className="absolute right-3 top-1/2 -translate-y-1/2"><SmallSpinnerIcon /></div>}
+              </div>
+            </div>
+
+            <div className="mt-2 relative">
+                <label htmlFor="chat-input" className="sr-only">{t('pasteTextLabel')}</label>
+              <textarea
+                id="chat-input"
+                rows={6}
+                className="w-full p-3 pr-20 text-sm text-gray-900 bg-white border border-gray-300 rounded-lg shadow-sm dark:bg-gray-800 dark:border-gray-600 dark:text-white focus:ring-purple-500 focus:border-purple-500 transition-all resize-none min-h-[8rem]"
+                placeholder={t('pasteTextPlaceholder')}
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                onKeyDown={handleKeyDown}
+                disabled={isLoading}
+                />
               <div className="absolute bottom-2 right-2 flex items-center">
                   <input type="file" id="file-upload" className="hidden" ref={fileInputRef} onChange={handleFileChange} accept="image/*,text/plain,.pdf,.doc,.docx" />
                   <button
@@ -214,8 +238,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     {isLoading ? <SmallSpinnerIcon/> : <SendIcon/>}
                   </button>
               </div>
+            </div>
+          </form>
+        )}
+
+        {/* Fill Form Mode Message */}
+        {activeMode === 'fill-form' && (
+          <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+            <p className="text-sm text-blue-700 dark:text-blue-300">
+              Switch to the "Fill Form" tab in the main area to upload and fill PDF forms.
+            </p>
           </div>
-        </form>
+        )}
     </div>
   );
   

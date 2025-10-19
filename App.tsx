@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { MainContent } from './components/MainContent';
+import { FormFiller } from './components/FormFiller';
 import { sendChatMessage } from './services/api';
 import { AppState, UploadedFile, ChatMessage } from './types';
 import { useAccessibility } from './hooks/useAccessibility';
@@ -17,6 +18,7 @@ function AppContent() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
   const [audioError, setAudioError] = useState<string | null>(null);
+  const [activeMode, setActiveMode] = useState<'simplify' | 'fill-form'>('simplify');
   
   const { isHighContrast, isLargeText, toggleHighContrast, toggleLargeText } = useAccessibility();
   const { theme, toggleTheme } = useTheme();
@@ -87,6 +89,8 @@ function AppContent() {
           isAudioPlaying={isAudioPlaying}
           theme={theme}
           toggleTheme={toggleTheme}
+          activeMode={activeMode}
+          setActiveMode={setActiveMode}
         />
       </div>
 
@@ -105,12 +109,16 @@ function AppContent() {
         </header>
         
         <main className="flex-1 overflow-y-auto p-4 md:p-8 pt-16 md:pt-8">
-          <MainContent
-            isLoading={appState === 'loading'}
-            messages={messages}
-            onPlayStateChange={setIsAudioPlaying}
-            onAudioError={handleAudioError}
-          />
+          {activeMode === 'simplify' ? (
+            <MainContent
+              isLoading={appState === 'loading'}
+              messages={messages}
+              onPlayStateChange={setIsAudioPlaying}
+              onAudioError={handleAudioError}
+            />
+          ) : (
+            <FormFiller theme={theme} />
+          )}
         </main>
       </div>
       <AccessibilityMenu 
