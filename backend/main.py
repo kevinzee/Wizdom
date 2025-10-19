@@ -9,7 +9,7 @@ import base64
 import json
 from pypdf import PdfReader
 
-# SpeakEasy imports
+# Wizdom imports
 from .gemini_client import simplify_text, simplify_extracted_text, translate_text
 from .elevenlabs_client import synthesize_speech
 from .acroform_client import extract_form_fields, FormSchema
@@ -17,7 +17,7 @@ from .pdf_generator import generate_filled_form_pdf
 
 load_dotenv()
 
-app = FastAPI(title="SpeakEasy API", version="2.0")
+app = FastAPI(title="Wizdom API", version="2.0")
 
 # ===== CORS Middleware =====
 app.add_middleware(
@@ -31,7 +31,7 @@ app.add_middleware(
         "http://127.0.0.1:5173",
         "http://10.141.141.54:3000",
         "http://10.141.141.54:3001",
-        "https://hide-military-development-summer.trycloudflare.com",
+        "https://pgp-helps-inter-differential.trycloudflare.com",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -338,7 +338,7 @@ def root():
     """Welcome message with available endpoints"""
     print("[DEBUG] Root endpoint called")
     return {
-        "message": "Welcome to the SpeakEasy API",
+        "message": "Welcome to the Wizdom API",
         "endpoints": {
             "simplify_and_speak": [
                 "/speak_text_input - Simplify, translate, and narrate text",

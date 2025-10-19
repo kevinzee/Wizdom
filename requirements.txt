@@ -5,6 +5,7 @@ google-generativeai
 elevenlabs
 textstat
 tenacity
+reportlab
 
 # extras needed by your endpoints
 python-multipart   # for UploadFile form handling
